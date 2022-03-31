@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: application-monitor
+  jmx:
+    default-domain: ${spring.application.name}
+
+management:
+  endpoints:
+    jmx:
+      domain: ${spring.application.name}
+server:
+  servlet:
+    context-path: /${spring.application.name}
+eureka:
+  instance:
+    metadata-map:
+      instance-id: ${spring.application.name}
+    home-page-url-path: ${server.servlet.context-path}/
+    status-page-url-path: ${server.servlet.context-path}/actuator/info
+    health-check-url-path: ${server.servlet.context-path}/actuator/health
+    prefer-ip-address: true
+
+--- # -----------------------------------------------------------------------------------
+spring.profiles: dev
+app.env: dev
+--- # -----------------------------------------------------------------------------------
+spring.profiles: qa,qal
+app.env: qal
+--- # -----------------------------------------------------------------------------------
+spring.profiles: stg
+app.env: stg
+--- # -----------------------------------------------------------------------------------
+spring.profiles: prd, prod
+app.env: prd
