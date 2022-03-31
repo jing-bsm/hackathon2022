@@ -1,0 +1,26 @@
+<ehcache xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:noNamespaceSchemaLocation="http://ehcache.org/ehcache.xsd">
+
+    <!-- Actual cache default values are implemented in AppWebConfiguration.java -->
+
+    <defaultCache maxEntriesLocalHeap="1" />
+    <sizeOfPolicy maxDepth="10000" maxDepthExceededBehavior="continue"/>
+
+    <cache name="Cache:FiscalClientCalendar" maxElementsInMemory="100" timeToLiveSeconds="0" timeToIdleSeconds="3600" eternal="false"
+           overflowToDisk="false">
+        <!-- Adding EhCache searchable capabilities -->
+        <searchable keys="false" values="false">
+            <searchAttribute name="customerKey" expression="key.getId().getCustomerKey()"/>
+        </searchable>
+        <persistence strategy="NONE" />
+    </cache>
+
+    <cache name="Cache:FiscalClientCalendar.Queries" maxElementsInMemory="100" timeToLiveSeconds="0" timeToIdleSeconds="3600" eternal="false"
+           overflowToDisk="false">
+        <!-- Adding EhCache searchable capabilities -->
+        <searchable keys="false" values="false">
+            <searchAttribute name="customerKey" class="com.foresee.calendar.config.CustomKeyObjectAttributeExtractor"/>
+        </searchable>
+        <persistence strategy="NONE" />
+    </cache>
+</ehcache>

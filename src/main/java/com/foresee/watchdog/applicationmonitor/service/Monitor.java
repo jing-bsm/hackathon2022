@@ -1,5 +1,6 @@
 package com.foresee.watchdog.applicationmonitor.service;
 
+import com.foresee.api_automation.object_libraries.api_definition.AccessAPI;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
@@ -17,7 +18,7 @@ import java.util.concurrent.*;
 @Service
 @RequiredArgsConstructor
 @Log4j2
-public class Mornitor {
+public class Monitor {
 
     @Value("${config.schedule.job-timeout:30}")
     private long jobTimeout = 30;
@@ -27,10 +28,17 @@ public class Mornitor {
     private final ConcurrentLinkedDeque<Pair<String, Runnable>> randomDeque = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<List<Pair<String, Runnable>>> sequenceDeque = new ConcurrentLinkedDeque<>();
 
-    @Scheduled(fixedRateString = "${config.schedule.interval:60000}", initialDelay = 10000) // wait 10s to start, run every 3 minutes
+    @Scheduled(fixedRateString = "${config.schedule.interval:60000}", initialDelay = 10000)
+    // wait 10s to start, run every 3 minutes
     public void check() {
+        log.info("-------- Starting monitor -------------");
         CompletableFuture.runAsync(this::checkRandomList);
         CompletableFuture.runAsync(this::checkSequenceList);
+    }
+
+    @Scheduled(fixedRate = 2 * 60 * 60000, initialDelay = 60 * 60000) // wait 1h to start, run every 2 hours
+    public void cleanUp() {
+        AccessAPI.flushCache();
     }
 
     private void checkPairTimed(Pair<String, Runnable> pair) {

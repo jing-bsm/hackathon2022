@@ -9,7 +9,7 @@
 
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{ISO8601}] [%level] [XX_SERVICE] [%X{X-B3-TraceId}] [%X{X-B3-SpanId}] [%X{x-acs-username}] [%X{x-acs-host}] [%t] [%logger{36}] [%X{x-acs-locale}] [%X{x-acs-ipaddress}] [%msg]%n"/>
+            <PatternLayout pattern="[%d{ISO8601}] [%level] [XX_SERVICE] [%t] [%logger{36}] [%X{x-acs-locale}] [%X{x-acs-ipaddress}] [%msg]%n"/>
         </Console>
     </Appenders>
 

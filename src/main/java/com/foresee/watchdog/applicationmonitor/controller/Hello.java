@@ -1,6 +1,6 @@
 package com.foresee.watchdog.applicationmonitor.controller;
 
-import com.foresee.watchdog.applicationmonitor.service.Mornitor;
+import com.foresee.watchdog.applicationmonitor.service.Monitor;
 import com.foresee.watchdog.applicationmonitor.service.Lookup;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 @Log4j2
 public class Hello {
     private final Lookup lookup;
-    private final Mornitor mornitor;
+    private final Monitor monitor;
 
     @SneakyThrows
     @RequestMapping("/")
@@ -23,6 +23,6 @@ public class Hello {
         log.info(location);
         log.info("got {},{},{}", lookup.getBaseAutomationClass().configuration,
                 lookup.getToken(), lookup.getSecret());
-        mornitor.check();
+        monitor.check();
     }
 }
