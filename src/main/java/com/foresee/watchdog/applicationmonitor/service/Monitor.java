@@ -1,7 +1,8 @@
 package com.foresee.watchdog.applicationmonitor.service;
 
 import com.foresee.api_automation.object_libraries.api_definition.AccessAPI;
-import io.micrometer.core.instrument.Counter;
+import com.google.common.collect.Sets;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Timer;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
 
 @Service
@@ -27,6 +29,9 @@ public class Monitor {
 
     private final ConcurrentLinkedDeque<Pair<String, Runnable>> randomDeque = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<List<Pair<String, Runnable>>> sequenceDeque = new ConcurrentLinkedDeque<>();
+    private final Set<Runnable> failedTestSet = Sets.newConcurrentHashSet();
+    private final Gauge failedTests = Gauge.builder("FAILED_TESTS", failedTestSet, Set::size)
+            .register(Metrics.globalRegistry);
 
     @Scheduled(fixedRateString = "${config.schedule.interval:60000}", initialDelay = 10000)
     // wait 10s to start, run every 3 minutes
@@ -64,11 +69,9 @@ public class Monitor {
         executor.invokeAll(Collections.singletonList(() -> {
             try {
                 pair.getSecond().run();
+                failedTestSet.remove(pair.getSecond());
             } catch (AssertionError assertionError) {
-                Counter.builder("FAIL_Tests")
-                        .tag("app", pair.getFirst())
-                        .register(Metrics.globalRegistry)
-                        .increment();
+                failedTestSet.add(pair.getSecond());
             }
             return null;
         }), jobTimeout, TimeUnit.SECONDS); // Timeout of 10 minutes.

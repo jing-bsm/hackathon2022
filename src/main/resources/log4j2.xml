@@ -9,7 +9,7 @@
 
     <Appenders>
         <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%d{ISO8601}] [%level] [XX_SERVICE] [%t] [%logger{36}] [%X{x-acs-locale}] [%X{x-acs-ipaddress}] [%msg]%n"/>
+            <PatternLayout pattern="[%d{ISO8601}] [%level] [AA_M] [%t] [%logger{36}] [%msg]%n"/>
         </Console>
     </Appenders>
 
