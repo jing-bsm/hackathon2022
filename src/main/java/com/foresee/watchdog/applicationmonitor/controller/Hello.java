@@ -1,13 +1,14 @@
 package com.foresee.watchdog.applicationmonitor.controller;
 
-import com.foresee.watchdog.applicationmonitor.service.Monitor;
 import com.foresee.watchdog.applicationmonitor.service.Lookup;
+import com.foresee.watchdog.applicationmonitor.service.Monitor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.Set;
 
 @RestController
 @RequiredArgsConstructor
@@ -17,12 +18,8 @@ public class Hello {
     private final Monitor monitor;
 
     @SneakyThrows
-    @RequestMapping("/")
-    public void hell(@RequestParam String service) {
-        final String location = lookup.serviceLocation(service);
-        log.info(location);
-        log.info("got {},{},{}", lookup.getBaseAutomationClass().configuration,
-                lookup.getToken(), lookup.getSecret());
-        monitor.check();
+    @RequestMapping("/failed")
+    public Set<String> failed() {
+        return monitor.listFailed();
     }
 }

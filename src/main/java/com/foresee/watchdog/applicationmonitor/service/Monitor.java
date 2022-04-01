@@ -1,6 +1,7 @@
 package com.foresee.watchdog.applicationmonitor.service;
 
 import com.foresee.api_automation.object_libraries.api_definition.AccessAPI;
+import com.foresee.api_automation.tests.microservices.benchmark.BenchmarkUtils;
 import com.google.common.collect.Sets;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
@@ -29,7 +30,7 @@ public class Monitor {
 
     private final ConcurrentLinkedDeque<Pair<String, Runnable>> randomDeque = new ConcurrentLinkedDeque<>();
     private final ConcurrentLinkedDeque<List<Pair<String, Runnable>>> sequenceDeque = new ConcurrentLinkedDeque<>();
-    private final Set<Runnable> failedTestSet = Sets.newConcurrentHashSet();
+    private final Set<String> failedTestSet = Sets.newConcurrentHashSet();
     private final Gauge failedTests = Gauge.builder("FAILED_TESTS", failedTestSet, Set::size)
             .register(Metrics.globalRegistry);
 
@@ -41,9 +42,14 @@ public class Monitor {
         CompletableFuture.runAsync(this::checkSequenceList);
     }
 
+    public Set<String> listFailed() {
+        return Collections.unmodifiableSet(failedTestSet);
+    }
+
     @Scheduled(fixedRate = 2 * 60 * 60000, initialDelay = 60 * 60000) // wait 1h to start, run every 2 hours
     public void cleanUp() {
         AccessAPI.flushCache();
+        BenchmarkUtils.getInstance().resetToken();
     }
 
     private void checkPairTimed(Pair<String, Runnable> pair) {
@@ -69,9 +75,9 @@ public class Monitor {
         executor.invokeAll(Collections.singletonList(() -> {
             try {
                 pair.getSecond().run();
-                failedTestSet.remove(pair.getSecond());
+                failedTestSet.remove(pair.getFirst());
             } catch (AssertionError assertionError) {
-                failedTestSet.add(pair.getSecond());
+                failedTestSet.add(pair.getFirst());
             }
             return null;
         }), jobTimeout, TimeUnit.SECONDS); // Timeout of 10 minutes.
