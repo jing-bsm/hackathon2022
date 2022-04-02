@@ -29,16 +29,16 @@ public class Mixed {
                 throw new AssertionError(e);
             }
         });
-        MasterDataControllerTest masterDataControllerTest = new MasterDataControllerTest();
-        monitor.register("Master_data", () -> {
-            try {
-                masterDataControllerTest.doBeforeTest();
-                masterDataControllerTest.testGetMasterDataRecords_12571595();
-                masterDataControllerTest.doAfterTest();
-            } catch (Exception e) {
-                throw new AssertionError(e);
-            }
-        });
+//        MasterDataControllerTest masterDataControllerTest = new MasterDataControllerTest();
+//        monitor.register("Master_data", () -> {
+//            try {
+//                masterDataControllerTest.doBeforeTest();
+//                masterDataControllerTest.testGetMasterDataRecords_12571595();
+//                masterDataControllerTest.doAfterTest();
+//            } catch (Exception e) {
+//                throw new AssertionError(e);
+//            }
+//        });
         SCIMGetControllerTest scimGetControllerTest = new SCIMGetControllerTest();
         monitor.register("Auth_scim", scimGetControllerTest::testSCIMGetUserByInternalId_8667538);
         PDFExportControllerTest pdfExportControllerTest = new PDFExportControllerTest();

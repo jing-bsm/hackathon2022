@@ -2,6 +2,7 @@ package com.foresee.watchdog;
 
 import com.foresee.api_automation.object_libraries.DiscoveryHelper;
 import com.foresee.api_automation.tests.microservices.hierarchy_service.Dummy;
+import com.foresee.api_automation.tests.microservices.master_data_management_service.MasterDataControllerTest;
 import io.micrometer.core.instrument.Timer;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import lombok.SneakyThrows;
@@ -31,7 +32,8 @@ public class PlayGround {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         log.info("start");
         executor.invokeAll(Arrays.asList(() -> {
-            timer.record(r); return null;
+            timer.record(r);
+            return null;
         }), 5, TimeUnit.SECONDS); // Timeout of 10 minutes.
         log.info("end 1");
         executor.shutdown();
@@ -45,15 +47,29 @@ public class PlayGround {
         T t = new T();
         t.ffail();
     }
-    public static void main(String[] args) {
+
+    public static void main2(String[] args) {
         final String eureka = DiscoveryHelper.GetEurekaServiceIPWithPortNo("feedback-reporting".toLowerCase(),
                 Dummy.getAuto().getParam("eureka"));
         log.info("------------");
         log.info(eureka);
     }
-    static class T{
+
+    public static void main(String... args) {
+        MasterDataControllerTest masterDataControllerTest = new MasterDataControllerTest();
+        try {
+            masterDataControllerTest.doBeforeTest();
+            masterDataControllerTest.testGetMasterDataRecords_12571595();
+            masterDataControllerTest.doAfterTest();
+        } catch (Exception e) {
+            log.error(e);
+            throw new AssertionError(e);
+        }
+    }
+
+    static class T {
         @Test
-        void ffail(){
+        void ffail() {
             Assert.assertFalse(true);
         }
     }

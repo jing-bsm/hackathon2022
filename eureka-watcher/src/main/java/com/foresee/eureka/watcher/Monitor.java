@@ -20,6 +20,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,7 +32,9 @@ public class Monitor {
     @Getter(lazy = true)
     private final Set<String> allServices = initSet();
 
-    private final OkHttpClient client = new OkHttpClient();
+    private final OkHttpClient client = new OkHttpClient.Builder().connectTimeout(1, TimeUnit.SECONDS)
+            .readTimeout(1, TimeUnit.SECONDS).writeTimeout(1, TimeUnit.SECONDS)
+            .callTimeout(5, TimeUnit.SECONDS).build();
 
     private final Set<String> downSet = new HashSet<>();
     private final Set<String> missingSet = new HashSet<>();
@@ -108,7 +111,7 @@ public class Monitor {
         return Collections.emptyList();
     }
 
-    private List<EurekaInstance> getInstances() {
+    List<EurekaInstance> getInstances() {
         List<EurekaInstance> list = getInstancesFromUrl("http://qal-service-discovery-b.foresee.com/acs-discovery/eureka/apps");
         if (list.isEmpty()) {
             list = getInstancesFromUrl("http://qal-service-discovery-a.foresee.com/acs-discovery/eureka/apps");

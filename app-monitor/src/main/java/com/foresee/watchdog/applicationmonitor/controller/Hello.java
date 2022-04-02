@@ -1,6 +1,5 @@
 package com.foresee.watchdog.applicationmonitor.controller;
 
-import com.foresee.watchdog.applicationmonitor.service.Lookup;
 import com.foresee.watchdog.applicationmonitor.service.Monitor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -14,7 +13,6 @@ import java.util.Set;
 @RequiredArgsConstructor
 @Log4j2
 public class Hello {
-    private final Lookup lookup;
     private final Monitor monitor;
 
     @SneakyThrows
