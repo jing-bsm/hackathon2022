@@ -55,6 +55,7 @@
     </dependencies>
 
     <build>
+        <finalName>${project.artifactId}-boot</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -85,12 +86,10 @@
                     <images>
                         <image>
                             <name>${jkube.generator.name}</name>
-                            <alias>${project.artifactId}</alias>
+                            <alias>${project.artifactId}-boot</alias>
                             <build>
                                 <from>${docker.repo}/openjdk:8</from>
-                                <cmd>java $DEFAULT_JAVA_OPTS -Deureka.instance.ipAddress=$K8S_INGRESS_LB $JAVA_OPTS -jar
-                                    maven/${project.artifactId}-boot.jar
-                                </cmd>
+                                <cmd>java $DEFAULT_JAVA_OPTS -Deureka.instance.ipAddress=$K8S_INGRESS_LB $JAVA_OPTS -jar maven/${project.artifactId}-boot.jar</cmd>
                                 <assembly>
                                     <inline>
                                         <files>

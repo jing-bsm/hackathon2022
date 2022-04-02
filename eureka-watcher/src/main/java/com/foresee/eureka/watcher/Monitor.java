@@ -33,20 +33,37 @@ public class Monitor {
 
     private final OkHttpClient client = new OkHttpClient();
 
+    private final Set<String> downSet = new HashSet<>();
+    private final Set<String> missingSet = new HashSet<>();
+
     @Scheduled(fixedRateString = "${config.schedule.interval:10000}", initialDelay = 10000)
     public void check() {
         final List<EurekaInstance> instances = getInstances();
         log.info("got {} instance", instances.size());
-        instances.stream().filter(EurekaInstance::isDown).forEach(app -> {
-            Counter.builder("App-Down").tag("name", app.getApp())
-                    .tag("ip", app.getIpAddr()).tag("host", app.getHostName()).register(Metrics.globalRegistry);
-        });
+        final List<EurekaInstance> list = instances.stream().filter(EurekaInstance::isDown).collect(Collectors.toList());
+        if (list.isEmpty()) {
+            downSet.clear();
+        } else {
+            list.forEach(app -> {
+                if (!downSet.contains(app.getIpAddr())) {
+                    Counter.builder("App-Down").tag("name", app.getApp())
+                            .tag("ip", app.getIpAddr()).tag("host", app.getHostName()).register(Metrics.globalRegistry);
+                    downSet.add(app.getIpAddr());
+                }
+            });
+            log.warn("apps may down {}", list);
+        }
 
         HashSet<String> hashset = new HashSet<>(getAllServices());
         instances.stream().map(EurekaInstance::getApp).map(String::toLowerCase).distinct().sorted().forEach(hashset::remove);
-        if (!hashset.isEmpty()) {
+        if (hashset.isEmpty()) {
+            missingSet.clear();
+        } else {
             hashset.forEach(name -> {
-                Counter.builder("App-Missing").tag("name", name).register(Metrics.globalRegistry).increment();
+                if (!missingSet.contains(name)) {
+                    Counter.builder("App-Missing").tag("name", name).register(Metrics.globalRegistry).increment();
+                    missingSet.add(name);
+                }
             });
             log.warn("missing apps {}", hashset);
         }
