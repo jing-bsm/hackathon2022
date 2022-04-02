@@ -1,0 +1,9 @@
+management:
+  endpoints:
+    beans:
+      enabled: false
+    metrics:
+      enabled: true
+    web:
+      exposure:
+        include: info, health, metrics, prometheus
