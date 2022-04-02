@@ -8,6 +8,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.foresee.eureka.watcher.domain.EurekaInstance;
 import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
 import lombok.Getter;
 import lombok.SneakyThrows;
@@ -39,22 +40,23 @@ public class Monitor {
     private final Set<String> downSet = new HashSet<>();
     private final Set<String> missingSet = new HashSet<>();
 
+    private final Gauge dGauge = Gauge.builder("App-Down", downSet, Set::size)
+            .register(Metrics.globalRegistry);
+    private final Gauge mGauge = Gauge.builder("App-Missing", missingSet, Set::size)
+            .register(Metrics.globalRegistry);
+
     @Scheduled(fixedRateString = "${config.schedule.interval:10000}", initialDelay = 10000)
     public void check() {
         final List<EurekaInstance> instances = getInstances();
         log.info("got {} instance", instances.size());
-        final List<EurekaInstance> list = instances.stream().filter(EurekaInstance::isDown).collect(Collectors.toList());
-        if (list.isEmpty()) {
+        final Set<String> dSet = instances.stream().filter(EurekaInstance::isDown)
+                .map(EurekaInstance::getIpAddr).collect(Collectors.toSet());
+        if (dSet.isEmpty()) {
             downSet.clear();
         } else {
-            list.forEach(app -> {
-                if (!downSet.contains(app.getIpAddr())) {
-                    Counter.builder("App-Down").tag("name", app.getApp())
-                            .tag("ip", app.getIpAddr()).tag("host", app.getHostName()).register(Metrics.globalRegistry);
-                    downSet.add(app.getIpAddr());
-                }
-            });
-            log.warn("apps may down {}", list);
+            downSet.removeIf(i -> !dSet.contains(i));
+            downSet.addAll(dSet);
+            log.warn("down for {}", dSet);
         }
 
         HashSet<String> hashset = new HashSet<>(getAllServices());
@@ -62,13 +64,9 @@ public class Monitor {
         if (hashset.isEmpty()) {
             missingSet.clear();
         } else {
-            hashset.forEach(name -> {
-                if (!missingSet.contains(name)) {
-                    Counter.builder("App-Missing").tag("name", name).register(Metrics.globalRegistry).increment();
-                    missingSet.add(name);
-                }
-            });
-            log.warn("missing apps {}", hashset);
+            missingSet.removeIf(i -> !hashset.contains(i));
+            missingSet.addAll(hashset);
+            log.warn("missing for {}", hashset);
         }
     }
 
