@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.xml.XmlMapper;
 import com.foresee.eureka.watcher.domain.EurekaInstance;
-import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.Metrics;
 import lombok.Getter;
@@ -21,9 +20,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
 import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,6 +30,9 @@ import java.util.stream.Collectors;
 public class Monitor {
     @Value("${config.all-service:access-management, access-service, acs-discovery, adobe-integration, api-administration, arp-scheduling-service, arp-starter-service, arp-subscription-cxs, association-proxy-service, authorization-service, benchmark-service, calendar-service, case-configuration-services, case-hierarchy-sync, case-management-services, csv-export-service, csv-transformer-service, customer-management, cxmeasure-public-api-adapter, dashboard-data-service, dashboard-management-service, definition-service, engine-service, event-bus-manager, event-tracking-service, fcp-publisher, feedback-admin, feedback-data-loader, feedback-reporting, filter-service, firehose, foresee-services, google-integration, hierarchy-cxmeasure-service, hierarchy-def-upload-activity, hierarchy-definition-service, hierarchy-graph-maker, hierarchy-permissions-sync, hierarchy-service, hierarchy-sync-cxmeasure-service, hierarchy-transform-service, hierarchy-upload-csv-activity, hierarchy-upload-manager-server, hierarchy-upload-workflow, leaderboard-service, master-data-management-service, master-data-upload-activity, mpathy-asset-loader-service, mpathy-asset-server, mpathy-core-service, mpathy-hoover-service, oauth2-server, platform-auditlog-service, platform-communication-service, platform-distributed-tracing, platform-file-service, platform-gateway, platform-scim-service, ppt-export-service, respondents-service, settings-service, styp-service, survey-definition-builder, survey-definition-db-sync, survey-ingestion-ai, survey-ingestion-service, survey-rules-service, ta-public-api-adapter, ta-reporting-beta, text-analytics-admin-beta, user-management, useragent-service}")
     private String allServiceString;
+
+    @Value("${config.health-check-excludes:hierarchy-transform-service, survey-ingestion-ai, useragent-service, mpathy-asset-server, mpathy-core-service, mpathy-asset-loader-service, mpathy-hoover-service}")
+    private String healthCheckExcludesString;
 
 
     private final OkHttpClient client = new OkHttpClient.Builder().connectTimeout(1, TimeUnit.SECONDS)
@@ -41,10 +43,13 @@ public class Monitor {
     private final Set<String> downSet = new HashSet<>();
     @Getter
     private Map<String, Set<String>> allServices;
+    private Set<String> healthCheckExcludes;
 
     @PostConstruct
     public void postConstruct() {
         allServices = initSet();
+        healthCheckExcludes = Arrays.stream(Objects.requireNonNull(healthCheckExcludesString).split(","))
+                .map(String::trim).map(String::toLowerCase).collect(Collectors.toSet());
         Gauge.builder("App-Down", downSet, Set::size)
                 .register(Metrics.globalRegistry);
         Gauge.builder("App-Missing", getAllServices(), map -> map.values().stream().filter(Set::isEmpty).count())
@@ -55,15 +60,7 @@ public class Monitor {
     public void check() {
         final List<EurekaInstance> instances = getInstances();
         log.info("got {} instance", instances.size());
-        HashMap<String, Set<String>> currentUpMap = new HashMap<>();
-        instances.stream().filter(i -> !i.isDown()).forEach(i -> {
-            Set<String> set = currentUpMap.get(i.getApp());
-            if (set == null) {
-                set = new HashSet<>();
-            }
-            set.add(i.getIpAddr());
-            currentUpMap.put(i.getApp().toLowerCase(), set);
-        });
+        HashMap<String, Set<String>> currentUpMap = getCurrentUpMap(instances);
         allServices.forEach((name, set) -> {
             if (currentUpMap.containsKey(name)) {
                 final Set<String> cSet = currentUpMap.get(name);
@@ -143,5 +140,35 @@ public class Monitor {
         map.forEach((k, v) -> Gauge.builder("App-Count", v, Set::size)
                 .tag("app", k).register(Metrics.globalRegistry));
         return Collections.unmodifiableMap(map);
+    }
+
+    private HashMap<String, Set<String>> getCurrentUpMap(List<EurekaInstance> instances) {
+        HashMap<String, Set<String>> currentUpMap = new HashMap<>();
+        instances.parallelStream().filter(i -> !i.isDown()).forEach(i -> {
+            Set<String> set = currentUpMap.get(i.getApp());
+            if (set == null) {
+                set = new HashSet<>();
+            }
+            boolean healthUp = healthCheckExcludes.contains(i.getApp().toLowerCase()) || isHealthUp(i.getHealthCheckUrl());
+            if (healthUp) {
+                set.add(i.getIpAddr());
+            }
+            currentUpMap.put(i.getApp().toLowerCase(), set);
+        });
+        return currentUpMap;
+    }
+
+    private boolean isHealthUp(String healthUrl) {
+        Request request = new Request.Builder().url(healthUrl)
+                .build();
+        try {
+            final Response response = client.newCall(request).execute();
+            if (response.isSuccessful() && response.body() != null && response.body().string().contains("UP")) {
+                return true;
+            }
+        } catch (IOException e) {
+            log.warn(e);
+        }
+        return false;
     }
 }

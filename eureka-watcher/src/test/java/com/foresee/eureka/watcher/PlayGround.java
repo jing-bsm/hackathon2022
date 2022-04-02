@@ -8,6 +8,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
@@ -20,7 +21,11 @@ public class PlayGround {
         OkHttpClient client = new OkHttpClient.Builder().connectTimeout(1, TimeUnit.SECONDS)
                 .readTimeout(1, TimeUnit.SECONDS).writeTimeout(1, TimeUnit.SECONDS)
                 .callTimeout(10, TimeUnit.SECONDS).build();
+        HashSet<String> set = new HashSet<>();
+        HashSet<String> all = new HashSet<>();
         instances.forEach(i -> {
+            set.add(i.getApp().toLowerCase());
+            all.add(i.getApp().toLowerCase());
             Request request = new Request.Builder().url(i.getHealthCheckUrl())
                     .build();
             boolean fail = true;
@@ -30,11 +35,17 @@ public class PlayGround {
                     fail = false;
                 }
             } catch (IOException e) {
-                log.warn(e);
+                log.warn("{} {}, {}", i.getApp(), i.getHealthCheckUrl(), e.getMessage());
             }
             if (fail) {
-                log.info(i);
+                set.remove(i.getApp().toLowerCase());
+//                log.info("{}\t {}", i.getApp(), i.getHealthCheckUrl());
             }
         });
+        log.info(set);
+
+        log.info(all);
+        all.removeAll(set);
+        log.info(all);
     }
 }
