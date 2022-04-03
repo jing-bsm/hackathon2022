@@ -1,4 +1,4 @@
-package com.foresee.watchdog.applicationmonitor;
+package com.foresee.watchdog;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
