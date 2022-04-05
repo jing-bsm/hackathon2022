@@ -1,6 +1,6 @@
 package com.foresee.watchdog.applicationmonitor.controller;
 
-import com.foresee.watchdog.applicationmonitor.service.Monitor;
+import com.foresee.watchdog.applicationmonitor.service.QAMonitor;
 import com.foresee.watchdog.applicationmonitor.service.EurekaMonitor;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
@@ -16,12 +16,12 @@ import org.springframework.http.MediaType;
 @RequiredArgsConstructor
 public class Controller {
     private final EurekaMonitor eurekaMonitor;
-    private final Monitor monitor;
+    private final QAMonitor QAMonitor;
 
     @SneakyThrows
     @RequestMapping("/failed")
     public Set<String> failed() {
-        return monitor.listFailed();
+        return QAMonitor.listFailed();
     }
 
     @RequestMapping("info")

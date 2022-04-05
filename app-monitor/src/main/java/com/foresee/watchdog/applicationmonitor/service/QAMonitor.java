@@ -21,7 +21,7 @@ import java.util.concurrent.*;
 @Service
 @RequiredArgsConstructor
 @Log4j2
-public class Monitor {
+public class QAMonitor {
 
     @Value("${config.schedule.job-timeout:30}")
     private long jobTimeout = 30;
